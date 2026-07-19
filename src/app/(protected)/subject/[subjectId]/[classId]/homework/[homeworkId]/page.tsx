@@ -5,7 +5,7 @@ import { SubmissionGrid } from "@/components/homework/SubmissionGrid";
 export const dynamic = "force-dynamic";
 
 export default async function HomeworkSubmissionsPage(
-  props: PageProps<"/subject/homework/[homeworkId]">
+  props: PageProps<"/subject/[subjectId]/[classId]/homework/[homeworkId]">
 ) {
   const { homeworkId } = await props.params;
   const { homework, rows } = await getSubmissionRows(Number(homeworkId));

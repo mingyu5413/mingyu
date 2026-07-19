@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getStudent } from "@/lib/actions/students";
+import { getSubjectStudent } from "@/lib/actions/subjectStudents";
 import {
   getSeteukEntries,
   createSeteukEntry,
@@ -23,31 +23,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getNeisByteLength } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function SeteukDetailPage(
-  props: PageProps<"/subject/seteuk/[studentId]">
+  props: PageProps<"/subject/[subjectId]/[classId]/seteuk/[subjectStudentId]">
 ) {
-  const { studentId } = await props.params;
-  const id = Number(studentId);
-  const student = await getStudent(id);
+  const { classId, subjectStudentId } = await props.params;
+  const classIdNum = Number(classId);
+  const id = Number(subjectStudentId);
+  const student = await getSubjectStudent(id);
   if (!student) notFound();
 
   const [entries, drafts] = await Promise.all([getSeteukEntries(id), getSeteukDrafts(id)]);
 
   return (
     <div className="space-y-8">
-      <h1 className="text-xl font-semibold">
-        {student.academicYear}학년도 {student.number}번 {student.name} · 세특
-      </h1>
+      <h2 className="text-lg font-medium">
+        {student.number}번 {student.name} · 세특
+      </h2>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">수시 기록</h2>
+          <h3 className="font-medium">수시 기록</h3>
           <AddRecordDialog
             title="세특 수시 기록 추가"
-            action={createSeteukEntry.bind(null, id)}
+            action={createSeteukEntry.bind(null, classIdNum, id)}
           />
         </div>
         <RecordList
@@ -59,7 +61,7 @@ export default async function SeteukDetailPage(
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">완성본 (학기별)</h2>
+          <h3 className="font-medium">완성본 (학기별)</h3>
           <Dialog>
             <DialogTrigger render={<Button size="sm">완성본 작성</Button>} />
             <DialogContent>
@@ -67,10 +69,11 @@ export default async function SeteukDetailPage(
                 <DialogTitle>세특 완성본 작성</DialogTitle>
               </DialogHeader>
               <YearSemesterForm
-                action={saveSeteukDraft.bind(null, id)}
+                action={saveSeteukDraft.bind(null, classIdNum, id)}
                 submitLabel="저장"
                 contentLabel="세특 완성본"
                 contentRows={10}
+                showByteCounter
               />
             </DialogContent>
           </Dialog>
@@ -86,7 +89,8 @@ export default async function SeteukDetailPage(
               <CardContent className="space-y-2 py-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">
-                    {draft.academicYear}학년도 {draft.semester}학기
+                    {draft.academicYear}학년도 {draft.semester}학기 ·{" "}
+                    {getNeisByteLength(draft.finalText)} byte
                   </span>
                   <div className="flex gap-1">
                     <CopyButton text={draft.finalText} />
@@ -97,7 +101,7 @@ export default async function SeteukDetailPage(
                           <DialogTitle>세특 완성본 수정</DialogTitle>
                         </DialogHeader>
                         <YearSemesterForm
-                          action={saveSeteukDraft.bind(null, id)}
+                          action={saveSeteukDraft.bind(null, classIdNum, id)}
                           defaultValues={{
                             academicYear: draft.academicYear,
                             semester: draft.semester,
@@ -106,6 +110,7 @@ export default async function SeteukDetailPage(
                           submitLabel="수정 저장"
                           contentLabel="세특 완성본"
                           contentRows={10}
+                          showByteCounter
                         />
                       </DialogContent>
                     </Dialog>

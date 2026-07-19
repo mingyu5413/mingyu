@@ -2,11 +2,13 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { createHomework } from "@/lib/actions/homework";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+
+type ActionState = { error?: string } | undefined;
+type Action = (prevState: ActionState, formData: FormData) => Promise<ActionState>;
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -17,10 +19,9 @@ function SubmitButton() {
   );
 }
 
-export function HomeworkForm() {
-  const [state, formAction] = useActionState(createHomework, undefined);
+export function HomeworkForm({ action }: { action: Action }) {
+  const [state, formAction] = useActionState(action, undefined);
   const today = new Date().toISOString().slice(0, 10);
-  const currentYear = new Date().getFullYear();
 
   return (
     <form action={formAction} className="grid grid-cols-2 gap-3">
@@ -43,10 +44,6 @@ export function HomeworkForm() {
       <div className="space-y-1">
         <Label htmlFor="semester">학기</Label>
         <Input id="semester" name="semester" type="number" min={1} max={2} defaultValue={1} />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="academicYear">학년도</Label>
-        <Input id="academicYear" name="academicYear" type="number" defaultValue={currentYear} required />
       </div>
       {state?.error && <p className="col-span-2 text-sm text-destructive">{state.error}</p>}
       <div className="col-span-2">

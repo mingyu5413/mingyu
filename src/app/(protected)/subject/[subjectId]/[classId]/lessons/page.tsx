@@ -14,14 +14,22 @@ const FIELDS = [
   { name: "homeworkNote", label: "과제 메모" },
 ];
 
-export default async function LessonsPage() {
-  const items = await getLessonSessions();
+export default async function LessonsPage(
+  props: PageProps<"/subject/[subjectId]/[classId]/lessons">
+) {
+  const { classId } = await props.params;
+  const id = Number(classId);
+  const items = await getLessonSessions(id);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">수업 진도</h1>
-        <AddRecordDialog title="수업 기록 추가" action={createLessonSession} fields={FIELDS} />
+        <h2 className="text-lg font-medium">수업 진도</h2>
+        <AddRecordDialog
+          title="수업 기록 추가"
+          action={createLessonSession.bind(null, id)}
+          fields={FIELDS}
+        />
       </div>
       <RecordList
         items={items}

@@ -13,12 +13,14 @@ const schema = z.object({
   date: z.string().min(1, "날짜를 입력해주세요."),
   maxScore: z.coerce.number().positive(),
   semester: z.coerce.number().int().min(1).max(2),
-  academicYear: z.coerce.number().int().min(2000).max(2100),
 });
 
-export async function getAssessments() {
+export async function getAssessments(subjectClassId: number) {
   await requireSession();
-  return db.assessment.findMany({ orderBy: { date: "desc" } });
+  return db.assessment.findMany({
+    where: { subjectClassId },
+    orderBy: { date: "desc" },
+  });
 }
 
 export async function getAssessment(id: number) {
@@ -27,6 +29,7 @@ export async function getAssessment(id: number) {
 }
 
 export async function createAssessment(
+  subjectClassId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -37,21 +40,20 @@ export async function createAssessment(
     date: formData.get("date"),
     maxScore: formData.get("maxScore"),
     semester: formData.get("semester"),
-    academicYear: formData.get("academicYear"),
   });
   if (!parsed.success) return { error: firstZodError(parsed.error) };
 
   await db.assessment.create({
-    data: { ...parsed.data, date: new Date(parsed.data.date) },
+    data: { subjectClassId, ...parsed.data, date: new Date(parsed.data.date) },
   });
-  revalidatePath("/subject/assessments");
+  revalidatePath(`/subject`);
 }
 
-export async function deleteAssessment(id: number) {
+export async function deleteAssessment(subjectClassId: number, id: number) {
   await requireSession();
   await db.assessment.delete({ where: { id } });
-  revalidatePath("/subject/assessments");
-  redirect("/subject/assessments");
+  revalidatePath(`/subject`);
+  redirect(`/subject`);
 }
 
 export async function getScoreRows(assessmentId: number) {
@@ -59,12 +61,12 @@ export async function getScoreRows(assessmentId: number) {
   const assessment = await db.assessment.findUnique({ where: { id: assessmentId } });
   if (!assessment) return { assessment: null, rows: [] };
 
-  const students = await db.student.findMany({
-    where: { academicYear: assessment.academicYear },
+  const students = await db.subjectStudent.findMany({
+    where: { subjectClassId: assessment.subjectClassId },
     orderBy: { number: "asc" },
   });
   const scores = await db.score.findMany({ where: { assessmentId } });
-  const byStudent = new Map(scores.map((s) => [s.studentId, s]));
+  const byStudent = new Map(scores.map((s) => [s.subjectStudentId, s]));
 
   return {
     assessment,
@@ -77,7 +79,7 @@ export async function getScoreRows(assessmentId: number) {
 
 export async function setScore(
   assessmentId: number,
-  studentId: number,
+  subjectStudentId: number,
   formData: FormData
 ) {
   await requireSession();
@@ -86,9 +88,9 @@ export async function setScore(
   const score = rawScore === "" || rawScore === null ? null : Number(rawScore);
 
   await db.score.upsert({
-    where: { assessmentId_studentId: { assessmentId, studentId } },
+    where: { assessmentId_subjectStudentId: { assessmentId, subjectStudentId } },
     update: { score, note },
-    create: { assessmentId, studentId, score, note },
+    create: { assessmentId, subjectStudentId, score, note },
   });
-  revalidatePath(`/subject/assessments/${assessmentId}`);
+  revalidatePath(`/subject`);
 }

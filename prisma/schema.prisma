@@ -32,11 +32,6 @@ model Student {
   autonomousActivities AutonomousActivity[]
   clubActivities  ClubActivity[]
   behaviorCharacteristics BehaviorCharacteristic[]
-  scores          Score[]
-  homeworkSubmissions HomeworkSubmission[]
-  classBehaviorNotes ClassBehaviorNote[]
-  seteukEntries   SeteukEntry[]
-  seteukDrafts    SeteukDraft[]
 
   @@unique([academicYear, number])
 }
@@ -147,15 +142,76 @@ model ClassNotice {
   updatedAt DateTime @updatedAt
 }
 
+// ---------- 개인업무 ----------
+
+model PersonalTask {
+  id        Int       @id @default(autoincrement())
+  title     String
+  content   String?
+  date      DateTime
+  dueDate   DateTime?
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 // ---------- 교과담임 (Subject / Physics) ----------
+// 담임 반(Student)과는 완전히 분리된 계층: Subject -> SubjectClass -> SubjectStudent
+
+model Subject {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  classes SubjectClass[]
+}
+
+model SubjectClass {
+  id           Int      @id @default(autoincrement())
+  subjectId    Int
+  subject      Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicYear Int
+  label        String
+  createdAt    DateTime @default(now())
+
+  students           SubjectStudent[]
+  lessonSessions     LessonSession[]
+  assessments        Assessment[]
+  experiments        Experiment[]
+  homework           Homework[]
+  classBehaviorNotes ClassBehaviorNote[]
+  seteukEntries      SeteukEntry[]
+  seteukDrafts       SeteukDraft[]
+
+  @@unique([subjectId, academicYear, label])
+}
+
+model SubjectStudent {
+  id             Int          @id @default(autoincrement())
+  subjectClassId Int
+  subjectClass   SubjectClass @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  number         Int
+  name           String
+  createdAt      DateTime     @default(now())
+
+  scores              Score[]
+  homeworkSubmissions HomeworkSubmission[]
+  classBehaviorNotes  ClassBehaviorNote[]
+  seteukEntries       SeteukEntry[]
+  seteukDrafts        SeteukDraft[]
+
+  @@unique([subjectClassId, number])
+}
 
 model LessonSession {
-  id           Int      @id @default(autoincrement())
-  date         DateTime
-  unit         String
-  content      String
-  homeworkNote String?
-  createdAt    DateTime @default(now())
+  id             Int          @id @default(autoincrement())
+  subjectClassId Int
+  subjectClass   SubjectClass @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  date           DateTime
+  unit           String
+  content        String
+  homeworkNote   String?
+  createdAt      DateTime     @default(now())
 
   classBehaviorNotes ClassBehaviorNote[]
 }
@@ -166,95 +222,105 @@ enum AssessmentType {
 }
 
 model Assessment {
-  id           Int            @id @default(autoincrement())
-  title        String
-  type         AssessmentType
-  date         DateTime
-  maxScore     Float
-  semester     Int
-  academicYear Int
-  createdAt    DateTime       @default(now())
+  id             Int            @id @default(autoincrement())
+  subjectClassId Int
+  subjectClass   SubjectClass   @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  title          String
+  type           AssessmentType
+  date           DateTime
+  maxScore       Float
+  semester       Int
+  createdAt      DateTime       @default(now())
 
   scores Score[]
 }
 
 model Score {
-  id           Int        @id @default(autoincrement())
-  assessmentId Int
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  studentId    Int
-  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  score        Float?
-  note         String?
+  id               Int            @id @default(autoincrement())
+  assessmentId     Int
+  assessment       Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  subjectStudentId Int
+  subjectStudent   SubjectStudent @relation(fields: [subjectStudentId], references: [id], onDelete: Cascade)
+  score            Float?
+  note             String?
 
-  @@unique([assessmentId, studentId])
+  @@unique([assessmentId, subjectStudentId])
 }
 
 model Experiment {
-  id               Int      @id @default(autoincrement())
+  id               Int          @id @default(autoincrement())
+  subjectClassId   Int
+  subjectClass     SubjectClass @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
   date             DateTime
   title            String
   unit             String?
   procedureSummary String?
   resultsSummary   String
   safetyNotes      String?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime     @default(now())
 }
 
 model Homework {
-  id           Int      @id @default(autoincrement())
-  title        String
-  assignedDate DateTime
-  dueDate      DateTime
-  description  String
-  semester     Int?
-  academicYear Int
-  createdAt    DateTime @default(now())
+  id             Int          @id @default(autoincrement())
+  subjectClassId Int
+  subjectClass   SubjectClass @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  title          String
+  assignedDate   DateTime
+  dueDate        DateTime
+  description    String
+  semester       Int?
+  createdAt      DateTime     @default(now())
 
   submissions HomeworkSubmission[]
 }
 
 model HomeworkSubmission {
-  id            Int       @id @default(autoincrement())
-  homeworkId    Int
-  homework      Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
-  studentId     Int
-  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  submitted     Boolean   @default(false)
-  submittedDate DateTime?
-  note          String?
+  id               Int            @id @default(autoincrement())
+  homeworkId       Int
+  homework         Homework       @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  subjectStudentId Int
+  subjectStudent   SubjectStudent @relation(fields: [subjectStudentId], references: [id], onDelete: Cascade)
+  submitted        Boolean        @default(false)
+  submittedDate    DateTime?
+  note             String?
 
-  @@unique([homeworkId, studentId])
+  @@unique([homeworkId, subjectStudentId])
 }
 
 model ClassBehaviorNote {
-  id              Int            @id @default(autoincrement())
-  studentId       Int
-  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  date            DateTime
-  lessonSessionId Int?
-  lessonSession   LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
-  content         String
-  createdAt       DateTime       @default(now())
+  id               Int            @id @default(autoincrement())
+  subjectClassId   Int
+  subjectClass     SubjectClass   @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  subjectStudentId Int
+  subjectStudent   SubjectStudent @relation(fields: [subjectStudentId], references: [id], onDelete: Cascade)
+  date             DateTime
+  lessonSessionId  Int?
+  lessonSession    LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
+  content          String
+  createdAt        DateTime       @default(now())
 }
 
 model SeteukEntry {
-  id        Int      @id @default(autoincrement())
-  studentId Int
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  date      DateTime
-  content   String
-  createdAt DateTime @default(now())
+  id               Int            @id @default(autoincrement())
+  subjectClassId   Int
+  subjectClass     SubjectClass   @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  subjectStudentId Int
+  subjectStudent   SubjectStudent @relation(fields: [subjectStudentId], references: [id], onDelete: Cascade)
+  date             DateTime
+  content          String
+  createdAt        DateTime       @default(now())
 }
 
 model SeteukDraft {
-  id           Int      @id @default(autoincrement())
-  studentId    Int
-  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  academicYear Int
-  semester     Int
-  finalText    String
-  updatedAt    DateTime @updatedAt
+  id               Int            @id @default(autoincrement())
+  subjectClassId   Int
+  subjectClass     SubjectClass   @relation(fields: [subjectClassId], references: [id], onDelete: Cascade)
+  subjectStudentId Int
+  subjectStudent   SubjectStudent @relation(fields: [subjectStudentId], references: [id], onDelete: Cascade)
+  academicYear     Int
+  semester         Int
+  finalText        String
+  updatedAt        DateTime       @updatedAt
 
-  @@unique([studentId, academicYear, semester])
+  @@unique([subjectClassId, subjectStudentId, academicYear, semester])
 }

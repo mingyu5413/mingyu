@@ -6,13 +6,17 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { dateContentSchema, firstZodError } from "@/lib/actions/shared";
 
-export async function getSeteukEntries(studentId: number) {
+export async function getSeteukEntries(subjectStudentId: number) {
   await requireSession();
-  return db.seteukEntry.findMany({ where: { studentId }, orderBy: { date: "desc" } });
+  return db.seteukEntry.findMany({
+    where: { subjectStudentId },
+    orderBy: { date: "desc" },
+  });
 }
 
 export async function createSeteukEntry(
-  studentId: number,
+  subjectClassId: number,
+  subjectStudentId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -24,9 +28,14 @@ export async function createSeteukEntry(
   if (!parsed.success) return { error: firstZodError(parsed.error) };
 
   await db.seteukEntry.create({
-    data: { studentId, date: new Date(parsed.data.date), content: parsed.data.content },
+    data: {
+      subjectClassId,
+      subjectStudentId,
+      date: new Date(parsed.data.date),
+      content: parsed.data.content,
+    },
   });
-  revalidatePath(`/subject/seteuk/${studentId}`);
+  revalidatePath(`/subject`);
 }
 
 export async function updateSeteukEntry(
@@ -41,17 +50,17 @@ export async function updateSeteukEntry(
   });
   if (!parsed.success) return { error: firstZodError(parsed.error) };
 
-  const entry = await db.seteukEntry.update({
+  await db.seteukEntry.update({
     where: { id },
     data: { date: new Date(parsed.data.date), content: parsed.data.content },
   });
-  revalidatePath(`/subject/seteuk/${entry.studentId}`);
+  revalidatePath(`/subject`);
 }
 
 export async function deleteSeteukEntry(id: number) {
   await requireSession();
-  const entry = await db.seteukEntry.delete({ where: { id } });
-  revalidatePath(`/subject/seteuk/${entry.studentId}`);
+  await db.seteukEntry.delete({ where: { id } });
+  revalidatePath(`/subject`);
 }
 
 const draftSchema = z.object({
@@ -60,16 +69,17 @@ const draftSchema = z.object({
   content: z.string().min(1, "내용을 입력해주세요."),
 });
 
-export async function getSeteukDrafts(studentId: number) {
+export async function getSeteukDrafts(subjectStudentId: number) {
   await requireSession();
   return db.seteukDraft.findMany({
-    where: { studentId },
+    where: { subjectStudentId },
     orderBy: [{ academicYear: "desc" }, { semester: "desc" }],
   });
 }
 
 export async function saveSeteukDraft(
-  studentId: number,
+  subjectClassId: number,
+  subjectStudentId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -83,25 +93,27 @@ export async function saveSeteukDraft(
 
   await db.seteukDraft.upsert({
     where: {
-      studentId_academicYear_semester: {
-        studentId,
+      subjectClassId_subjectStudentId_academicYear_semester: {
+        subjectClassId,
+        subjectStudentId,
         academicYear: parsed.data.academicYear,
         semester: parsed.data.semester,
       },
     },
     update: { finalText: parsed.data.content },
     create: {
-      studentId,
+      subjectClassId,
+      subjectStudentId,
       academicYear: parsed.data.academicYear,
       semester: parsed.data.semester,
       finalText: parsed.data.content,
     },
   });
-  revalidatePath(`/subject/seteuk/${studentId}`);
+  revalidatePath(`/subject`);
 }
 
 export async function deleteSeteukDraft(id: number) {
   await requireSession();
-  const draft = await db.seteukDraft.delete({ where: { id } });
-  revalidatePath(`/subject/seteuk/${draft.studentId}`);
+  await db.seteukDraft.delete({ where: { id } });
+  revalidatePath(`/subject`);
 }

@@ -4,7 +4,7 @@ import {
   updateClassBehaviorNote,
   deleteClassBehaviorNote,
 } from "@/lib/actions/classBehaviorNotes";
-import { getStudents } from "@/lib/actions/students";
+import { getSubjectStudents } from "@/lib/actions/subjectStudents";
 import { getLessonSessions } from "@/lib/actions/lessons";
 import { ClassBehaviorNoteForm } from "@/components/behavior/ClassBehaviorNoteForm";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
@@ -20,17 +20,21 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function SubjectBehaviorPage() {
+export default async function SubjectBehaviorPage(
+  props: PageProps<"/subject/[subjectId]/[classId]/behavior">
+) {
+  const { classId } = await props.params;
+  const id = Number(classId);
   const [notes, students, lessonSessions] = await Promise.all([
-    getClassBehaviorNotes(),
-    getStudents(),
-    getLessonSessions(),
+    getClassBehaviorNotes(id),
+    getSubjectStudents(id),
+    getLessonSessions(id),
   ]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">수업 중 행동 기록</h1>
+        <h2 className="text-lg font-medium">수업 중 행동 기록</h2>
         <Dialog>
           <DialogTrigger render={<Button size="sm">기록 추가</Button>} />
           <DialogContent>
@@ -38,7 +42,7 @@ export default async function SubjectBehaviorPage() {
               <DialogTitle>행동 기록 추가</DialogTitle>
             </DialogHeader>
             <ClassBehaviorNoteForm
-              action={createClassBehaviorNote}
+              action={createClassBehaviorNote.bind(null, id)}
               students={students}
               lessonSessions={lessonSessions}
               submitLabel="추가"
@@ -57,8 +61,8 @@ export default async function SubjectBehaviorPage() {
             <CardContent className="flex items-start justify-between gap-4 py-4">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">
-                  {new Date(note.date).toLocaleDateString("ko-KR")} · {note.student.number}번{" "}
-                  {note.student.name}
+                  {new Date(note.date).toLocaleDateString("ko-KR")} · {note.subjectStudent.number}번{" "}
+                  {note.subjectStudent.name}
                   {note.lessonSession ? ` · ${note.lessonSession.unit}` : ""}
                 </div>
                 <p className="whitespace-pre-wrap text-sm">{note.content}</p>

@@ -26,12 +26,16 @@ function parse(formData: FormData) {
   });
 }
 
-export async function getExperiments() {
+export async function getExperiments(subjectClassId: number) {
   await requireSession();
-  return db.experiment.findMany({ orderBy: { date: "desc" } });
+  return db.experiment.findMany({
+    where: { subjectClassId },
+    orderBy: { date: "desc" },
+  });
 }
 
 export async function createExperiment(
+  subjectClassId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -40,9 +44,9 @@ export async function createExperiment(
   if (!parsed.success) return { error: firstZodError(parsed.error) };
 
   await db.experiment.create({
-    data: { ...parsed.data, date: new Date(parsed.data.date) },
+    data: { subjectClassId, ...parsed.data, date: new Date(parsed.data.date) },
   });
-  revalidatePath("/subject/experiments");
+  revalidatePath("/subject");
 }
 
 export async function updateExperiment(
@@ -58,11 +62,11 @@ export async function updateExperiment(
     where: { id },
     data: { ...parsed.data, date: new Date(parsed.data.date) },
   });
-  revalidatePath("/subject/experiments");
+  revalidatePath("/subject");
 }
 
 export async function deleteExperiment(id: number) {
   await requireSession();
   await db.experiment.delete({ where: { id } });
-  revalidatePath("/subject/experiments");
+  revalidatePath("/subject");
 }

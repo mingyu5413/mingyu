@@ -10,7 +10,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function AssessmentScoresPage(
-  props: PageProps<"/subject/assessments/[assessmentId]">
+  props: PageProps<"/subject/[subjectId]/[classId]/assessments/[assessmentId]">
 ) {
   const { assessmentId } = await props.params;
   const { assessment, rows } = await getScoreRows(Number(assessmentId));

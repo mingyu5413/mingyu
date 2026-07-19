@@ -20,12 +20,16 @@ function parse(formData: FormData) {
   });
 }
 
-export async function getLessonSessions() {
+export async function getLessonSessions(subjectClassId: number) {
   await requireSession();
-  return db.lessonSession.findMany({ orderBy: { date: "desc" } });
+  return db.lessonSession.findMany({
+    where: { subjectClassId },
+    orderBy: { date: "desc" },
+  });
 }
 
 export async function createLessonSession(
+  subjectClassId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -35,13 +39,14 @@ export async function createLessonSession(
 
   await db.lessonSession.create({
     data: {
+      subjectClassId,
       date: new Date(parsed.data.date),
       content: parsed.data.content,
       unit: parsed.data.unit,
       homeworkNote: parsed.data.homeworkNote,
     },
   });
-  revalidatePath("/subject/lessons");
+  revalidatePath(`/subject`);
 }
 
 export async function updateLessonSession(
@@ -62,11 +67,11 @@ export async function updateLessonSession(
       homeworkNote: parsed.data.homeworkNote,
     },
   });
-  revalidatePath("/subject/lessons");
+  revalidatePath(`/subject`);
 }
 
 export async function deleteLessonSession(id: number) {
   await requireSession();
   await db.lessonSession.delete({ where: { id } });
-  revalidatePath("/subject/lessons");
+  revalidatePath(`/subject`);
 }

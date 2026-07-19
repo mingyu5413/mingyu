@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Student, LessonSession } from "@/generated/prisma/client";
+import type { SubjectStudent, LessonSession } from "@/generated/prisma/client";
 
 type ActionState = { error?: string } | undefined;
 type Action = (prevState: ActionState, formData: FormData) => Promise<ActionState>;
@@ -31,7 +31,7 @@ export function ClassBehaviorNoteForm({
   submitLabel = "저장",
 }: {
   action: Action;
-  students?: Student[];
+  students?: SubjectStudent[];
   lessonSessions: LessonSession[];
   defaultValues?: { date?: Date; lessonSessionId?: number | null; content?: string };
   submitLabel?: string;
@@ -45,8 +45,14 @@ export function ClassBehaviorNoteForm({
     <form action={formAction} className="space-y-3">
       {students && (
         <div className="space-y-1">
-          <Label htmlFor="studentId">학생</Label>
-          <select id="studentId" name="studentId" required defaultValue="" className={selectClass}>
+          <Label htmlFor="subjectStudentId">학생</Label>
+          <select
+            id="subjectStudentId"
+            name="subjectStudentId"
+            required
+            defaultValue=""
+            className={selectClass}
+          >
             <option value="" disabled>
               학생 선택
             </option>

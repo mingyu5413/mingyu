@@ -18,20 +18,24 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function ExperimentsPage() {
-  const items = await getExperiments();
+export default async function ExperimentsPage(
+  props: PageProps<"/subject/[subjectId]/[classId]/experiments">
+) {
+  const { classId } = await props.params;
+  const id = Number(classId);
+  const items = await getExperiments(id);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">실험·실습 기록</h1>
+        <h2 className="text-lg font-medium">실험·실습 기록</h2>
         <Dialog>
           <DialogTrigger render={<Button size="sm">실험 추가</Button>} />
           <DialogContent>
             <DialogHeader>
               <DialogTitle>실험 기록 추가</DialogTitle>
             </DialogHeader>
-            <ExperimentForm action={createExperiment} submitLabel="추가" />
+            <ExperimentForm action={createExperiment.bind(null, id)} submitLabel="추가" />
           </DialogContent>
         </Dialog>
       </div>

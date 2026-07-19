@@ -13,15 +13,18 @@ const schema = z.object({
   dueDate: z.string().min(1, "마감일을 입력해주세요."),
   description: z.string().min(1, "내용을 입력해주세요."),
   semester: z.coerce.number().int().optional(),
-  academicYear: z.coerce.number().int().min(2000).max(2100),
 });
 
-export async function getHomeworkList() {
+export async function getHomeworkList(subjectClassId: number) {
   await requireSession();
-  return db.homework.findMany({ orderBy: { dueDate: "desc" } });
+  return db.homework.findMany({
+    where: { subjectClassId },
+    orderBy: { dueDate: "desc" },
+  });
 }
 
 export async function createHomework(
+  subjectClassId: number,
   _prevState: { error?: string } | undefined,
   formData: FormData
 ) {
@@ -32,25 +35,25 @@ export async function createHomework(
     dueDate: formData.get("dueDate"),
     description: formData.get("description"),
     semester: formData.get("semester") || undefined,
-    academicYear: formData.get("academicYear"),
   });
   if (!parsed.success) return { error: firstZodError(parsed.error) };
 
   await db.homework.create({
     data: {
+      subjectClassId,
       ...parsed.data,
       assignedDate: new Date(parsed.data.assignedDate),
       dueDate: new Date(parsed.data.dueDate),
     },
   });
-  revalidatePath("/subject/homework");
+  revalidatePath("/subject");
 }
 
-export async function deleteHomework(id: number) {
+export async function deleteHomework(subjectClassId: number, id: number) {
   await requireSession();
   await db.homework.delete({ where: { id } });
-  revalidatePath("/subject/homework");
-  redirect("/subject/homework");
+  revalidatePath("/subject");
+  redirect(`/subject`);
 }
 
 export async function getSubmissionRows(homeworkId: number) {
@@ -58,12 +61,12 @@ export async function getSubmissionRows(homeworkId: number) {
   const homework = await db.homework.findUnique({ where: { id: homeworkId } });
   if (!homework) return { homework: null, rows: [] };
 
-  const students = await db.student.findMany({
-    where: { academicYear: homework.academicYear },
+  const students = await db.subjectStudent.findMany({
+    where: { subjectClassId: homework.subjectClassId },
     orderBy: { number: "asc" },
   });
   const submissions = await db.homeworkSubmission.findMany({ where: { homeworkId } });
-  const byStudent = new Map(submissions.map((s) => [s.studentId, s]));
+  const byStudent = new Map(submissions.map((s) => [s.subjectStudentId, s]));
 
   return {
     homework,
@@ -74,33 +77,38 @@ export async function getSubmissionRows(homeworkId: number) {
   };
 }
 
-export async function toggleSubmission(homeworkId: number, studentId: number) {
+export async function toggleSubmission(homeworkId: number, subjectStudentId: number) {
   await requireSession();
   const existing = await db.homeworkSubmission.findUnique({
-    where: { homeworkId_studentId: { homeworkId, studentId } },
+    where: { homeworkId_subjectStudentId: { homeworkId, subjectStudentId } },
   });
   const submitted = !(existing?.submitted ?? false);
 
   await db.homeworkSubmission.upsert({
-    where: { homeworkId_studentId: { homeworkId, studentId } },
+    where: { homeworkId_subjectStudentId: { homeworkId, subjectStudentId } },
     update: { submitted, submittedDate: submitted ? new Date() : null },
-    create: { homeworkId, studentId, submitted, submittedDate: submitted ? new Date() : null },
+    create: {
+      homeworkId,
+      subjectStudentId,
+      submitted,
+      submittedDate: submitted ? new Date() : null,
+    },
   });
-  revalidatePath(`/subject/homework/${homeworkId}`);
+  revalidatePath(`/subject`);
 }
 
 export async function setSubmissionNote(
   homeworkId: number,
-  studentId: number,
+  subjectStudentId: number,
   formData: FormData
 ) {
   await requireSession();
   const note = String(formData.get("note") ?? "");
 
   await db.homeworkSubmission.upsert({
-    where: { homeworkId_studentId: { homeworkId, studentId } },
+    where: { homeworkId_subjectStudentId: { homeworkId, subjectStudentId } },
     update: { note },
-    create: { homeworkId, studentId, note },
+    create: { homeworkId, subjectStudentId, note },
   });
-  revalidatePath(`/subject/homework/${homeworkId}`);
+  revalidatePath(`/subject`);
 }

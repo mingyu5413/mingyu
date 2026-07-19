@@ -9,14 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Student, HomeworkSubmission } from "@/generated/prisma/client";
+import type { SubjectStudent, HomeworkSubmission } from "@/generated/prisma/client";
 
 export function SubmissionGrid({
   homeworkId,
   rows,
 }: {
   homeworkId: number;
-  rows: { student: Student; submission: HomeworkSubmission | null }[];
+  rows: { student: SubjectStudent; submission: HomeworkSubmission | null }[];
 }) {
   return (
     <Table>

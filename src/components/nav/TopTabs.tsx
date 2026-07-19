@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/homeroom", label: "학급담임" },
   { href: "/subject", label: "교과담임" },
+  { href: "/personal", label: "개인업무" },
 ];
 
 export function TopTabs() {

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getAssessments, deleteAssessment } from "@/lib/actions/assessments";
-import { AssessmentForm } from "@/components/assessments/AssessmentForm";
+import { getHomeworkList, createHomework, deleteHomework } from "@/lib/actions/homework";
+import { HomeworkForm } from "@/components/homework/HomeworkForm";
 import { ConfirmSubmitButton } from "@/components/shared/ConfirmSubmitButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,44 +14,44 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<string, string> = {
-  WRITTEN: "지필평가",
-  PERFORMANCE: "수행평가",
-};
-
-export default async function AssessmentsPage() {
-  const assessments = await getAssessments();
+export default async function HomeworkPage(
+  props: PageProps<"/subject/[subjectId]/[classId]/homework">
+) {
+  const { subjectId, classId } = await props.params;
+  const id = Number(classId);
+  const items = await getHomeworkList(id);
+  const basePath = `/subject/${subjectId}/${classId}/homework`;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">평가·성적</h1>
+        <h2 className="text-lg font-medium">과제 관리</h2>
         <Dialog>
-          <DialogTrigger render={<Button size="sm">평가 추가</Button>} />
+          <DialogTrigger render={<Button size="sm">과제 추가</Button>} />
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>평가 추가</DialogTitle>
+              <DialogTitle>과제 추가</DialogTitle>
             </DialogHeader>
-            <AssessmentForm />
+            <HomeworkForm action={createHomework.bind(null, id)} />
           </DialogContent>
         </Dialog>
       </div>
 
-      {assessments.length === 0 && (
-        <p className="text-sm text-muted-foreground">등록된 평가가 없습니다.</p>
+      {items.length === 0 && (
+        <p className="text-sm text-muted-foreground">등록된 과제가 없습니다.</p>
       )}
 
       <div className="space-y-3">
-        {assessments.map((a) => (
-          <Card key={a.id}>
+        {items.map((hw) => (
+          <Card key={hw.id}>
             <CardContent className="flex items-center justify-between py-4">
               <div>
-                <Link href={`/subject/assessments/${a.id}`} className="font-medium hover:underline">
-                  {a.title}
+                <Link href={`${basePath}/${hw.id}`} className="font-medium hover:underline">
+                  {hw.title}
                 </Link>
                 <p className="text-sm text-muted-foreground">
-                  {TYPE_LABELS[a.type]} · {new Date(a.date).toLocaleDateString("ko-KR")} · 만점{" "}
-                  {a.maxScore} · {a.academicYear}학년도 {a.semester}학기
+                  부여 {new Date(hw.assignedDate).toLocaleDateString("ko-KR")} · 마감{" "}
+                  {new Date(hw.dueDate).toLocaleDateString("ko-KR")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -59,11 +59,11 @@ export default async function AssessmentsPage() {
                   variant="outline"
                   size="sm"
                   nativeButton={false}
-                  render={<Link href={`/subject/assessments/${a.id}`}>성적 입력</Link>}
+                  render={<Link href={`${basePath}/${hw.id}`}>제출 확인</Link>}
                 />
-                <form action={deleteAssessment.bind(null, a.id)}>
+                <form action={deleteHomework.bind(null, id, hw.id)}>
                   <ConfirmSubmitButton
-                    confirmMessage={`"${a.title}" 평가를 삭제할까요? 입력된 성적도 함께 삭제됩니다.`}
+                    confirmMessage={`"${hw.title}" 과제를 삭제할까요?`}
                     variant="destructive"
                     size="sm"
                   >

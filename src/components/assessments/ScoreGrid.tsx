@@ -9,14 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Student, Score } from "@/generated/prisma/client";
+import type { SubjectStudent, Score } from "@/generated/prisma/client";
 
 export function ScoreGrid({
   assessmentId,
   rows,
 }: {
   assessmentId: number;
-  rows: { student: Student; score: Score | null }[];
+  rows: { student: SubjectStudent; score: Score | null }[];
 }) {
   return (
     <Table>

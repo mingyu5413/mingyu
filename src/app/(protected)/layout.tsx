@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { logout } from "@/lib/auth";
 import { TopTabs } from "@/components/nav/TopTabs";
@@ -21,7 +22,7 @@ export default async function ProtectedLayout({
             variant="ghost"
             size="sm"
             nativeButton={false}
-            render={<a href="/api/export" download>데이터 내보내기</a>}
+            render={<Link href="/settings">설정</Link>}
           />
           <form action={logout}>
             <Button type="submit" variant="ghost" size="sm">
