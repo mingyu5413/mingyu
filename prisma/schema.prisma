@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- 학급담임 (Homeroom) ----------
+
+model Student {
+  id            Int      @id @default(autoincrement())
+  academicYear  Int
+  number        Int
+  name          String
+  gender        String?
+  birthdate     DateTime?
+  phone         String?
+  guardianPhone String?
+  memo          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  attendances     Attendance[]
+  counselingNotes CounselingNote[]
+  careerActivities CareerActivity[]
+  volunteerActivities VolunteerActivity[]
+  autonomousActivities AutonomousActivity[]
+  clubActivities  ClubActivity[]
+  behaviorCharacteristics BehaviorCharacteristic[]
+  scores          Score[]
+  homeworkSubmissions HomeworkSubmission[]
+  classBehaviorNotes ClassBehaviorNote[]
+  seteukEntries   SeteukEntry[]
+  seteukDrafts    SeteukDraft[]
+
+  @@unique([academicYear, number])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  EARLY_LEAVE
+  ABSENT_SICK
+  ABSENT_UNEXCUSED
+  ABSENT_ETC
+}
+
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  studentId Int
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AttendanceStatus
+  note      String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([studentId, date])
+}
+
+model CounselingNote {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  category  String?
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CareerActivity {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  semester  Int?
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VolunteerActivity {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date         DateTime
+  semester     Int?
+  place        String
+  activityType String
+  hours        Float
+  content      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AutonomousActivity {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  semester  Int?
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClubActivity {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  clubName  String
+  date      DateTime
+  semester  Int?
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BehaviorCharacteristic {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear Int
+  semester     Int
+  content      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, academicYear, semester])
+}
+
+model ClassNotice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  date      DateTime
+  category  String   @default("공지")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- 교과담임 (Subject / Physics) ----------
+
+model LessonSession {
+  id           Int      @id @default(autoincrement())
+  date         DateTime
+  unit         String
+  content      String
+  homeworkNote String?
+  createdAt    DateTime @default(now())
+
+  classBehaviorNotes ClassBehaviorNote[]
+}
+
+enum AssessmentType {
+  WRITTEN
+  PERFORMANCE
+}
+
+model Assessment {
+  id           Int            @id @default(autoincrement())
+  title        String
+  type         AssessmentType
+  date         DateTime
+  maxScore     Float
+  semester     Int
+  academicYear Int
+  createdAt    DateTime       @default(now())
+
+  scores Score[]
+}
+
+model Score {
+  id           Int        @id @default(autoincrement())
+  assessmentId Int
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    Int
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score        Float?
+  note         String?
+
+  @@unique([assessmentId, studentId])
+}
+
+model Experiment {
+  id               Int      @id @default(autoincrement())
+  date             DateTime
+  title            String
+  unit             String?
+  procedureSummary String?
+  resultsSummary   String
+  safetyNotes      String?
+  createdAt        DateTime @default(now())
+}
+
+model Homework {
+  id           Int      @id @default(autoincrement())
+  title        String
+  assignedDate DateTime
+  dueDate      DateTime
+  description  String
+  semester     Int?
+  academicYear Int
+  createdAt    DateTime @default(now())
+
+  submissions HomeworkSubmission[]
+}
+
+model HomeworkSubmission {
+  id            Int       @id @default(autoincrement())
+  homeworkId    Int
+  homework      Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  studentId     Int
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  submitted     Boolean   @default(false)
+  submittedDate DateTime?
+  note          String?
+
+  @@unique([homeworkId, studentId])
+}
+
+model ClassBehaviorNote {
+  id              Int            @id @default(autoincrement())
+  studentId       Int
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date            DateTime
+  lessonSessionId Int?
+  lessonSession   LessonSession? @relation(fields: [lessonSessionId], references: [id], onDelete: SetNull)
+  content         String
+  createdAt       DateTime       @default(now())
+}
+
+model SeteukEntry {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model SeteukDraft {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear Int
+  semester     Int
+  finalText    String
+  updatedAt    DateTime @updatedAt
+
+  @@unique([studentId, academicYear, semester])
+}
